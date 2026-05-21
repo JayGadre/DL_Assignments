@@ -1,0 +1,40 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models, datasets
+import matplotlib.pyplot as plt
+
+# 1. Load Data
+(x_train, y_train), (x_test, y_test) = datasets.cifar10.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+# 2. Define Data Augmentation & CNN Model
+def create_model(augment=False):
+    model = models.Sequential()
+    if augment:
+        model.add(layers.RandomFlip("horizontal"))
+        model.add(layers.RandomRotation(0.1))
+        model.add(layers.RandomZoom(0.1))
+    
+    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Flatten())
+    model.add(layers.Dense(64, activation='relu'))
+    model.add(layers.Dense(10, activation='softmax'))
+    return model
+
+# 3. Train Both Models
+model_orig = create_model(augment=False)
+model_orig.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+hist_orig = model_orig.fit(x_train, y_train, epochs=5, validation_data=(x_test, y_test), verbose=0)
+
+model_aug = create_model(augment=True)
+model_aug.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+hist_aug = model_aug.fit(x_train, y_train, epochs=5, validation_data=(x_test, y_test), verbose=0)
+
+# 4. Plot Comparison
+plt.plot(hist_orig.history['val_accuracy'], label='Original Model')
+plt.plot(hist_aug.history['val_accuracy'], label='Augmented Model')
+plt.title('Validation Accuracy Comparison')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
